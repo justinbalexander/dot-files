@@ -65,6 +65,16 @@ $(ARTIFACT_DIR)/asan_default_options.c: $(MAKEFILE_LIST)
 	}' > $@
 
 # Set up Undefined Behavior Sanitizer
+#-fsanitize-minimal-runtime only works with clang, unfortunately.
+# Remove trap on error from _CFLAGS (leave in _LDFLAGS to disable linking of
+# libubsan) and then compile and link in tinyubsan.c for a smaller footprint
+# even on embedded targets
+# TODO: I can modify symbol names in the symbol table using
+# objcopy --redefine-sym, can I also edit all the ubsan file
+# symbols to shrink the burden of the runtime? The file names and
+# the type names are large character arrays
+# Perhaps using --update-section or --redefine-syms
+# -fsanitize-undefined-trap-on-error
 _CFLAGS += -fsanitize=undefined \
 					 -fsanitize=bounds-strict \
 					 -fstack-protector-strong
@@ -77,6 +87,8 @@ _CFLAGS += $(CFLAGS)
 _LDFLAGS += $(LDFLAGS)
 
 WRITER_OBJECTS = $(foreach src, $(WRITER_SOURCES), $(ARTIFACT_DIR)/$(basename $(src)).o)
+
+# TODO: add gcc header dep generation
 
 all: writer
 
